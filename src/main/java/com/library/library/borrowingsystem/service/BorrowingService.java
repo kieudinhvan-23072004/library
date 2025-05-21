@@ -83,4 +83,20 @@ public class BorrowingService {
     public List<BorrowingRecord> getAllBorrowingRecords() {
         return borrowingRecordRepository.findAll();
     }
+
+    // Phương thức mới thêm vào để lấy danh sách mượn sách theo người dùng
+    public List<BorrowingRecord> getBorrowingsByPatron(Long patronId) {
+        if (!patronRepository.existsById(patronId)) {
+            throw new ResourceNotFoundException("Patron", "id", patronId);
+        }
+        return borrowingRecordRepository.findByPatronId(patronId);
+    }
+
+    // Phương thức mới thêm vào để lấy danh sách mượn sách theo sách
+    public List<BorrowingRecord> getBorrowingsByBook(Long bookId) {
+        if (!bookRepository.existsById(bookId)) {
+            throw new ResourceNotFoundException("Book", "id", bookId);
+        }
+        return borrowingRecordRepository.findByBookId(bookId);
+    }
 }
