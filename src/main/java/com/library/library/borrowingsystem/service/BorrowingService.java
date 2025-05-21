@@ -20,16 +20,19 @@ public class BorrowingService {
     private final PatronRepository patronRepository;
     private final BorrowingRecordRepository borrowingRecordRepository;
 
-    @Value("${app.max-borrow-days}")
+    @Value("${app.max-borrow-days:14}")
     private int maxBorrowDays;
 
-    @Value("${app.max-books-per-user}")
+    @Value("${app.max-books-per-user:5}")
     private int maxBooksPerUser;
 
     @Transactional
     public BorrowingRecord borrowBook(Long bookId, Long patronId) {
-        Book book = bookRepository.findById(bookId).get();
-        Patron patron = patronRepository.findById(patronId).get();
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new ResourceNotFoundException("Book", "id", bookId));
+        Patron patron = patronRepository.findById(patronId)
+                .orElseThrow(() -> new ResourceNotFoundException("Patron", "id", patronId));
+
         if (book.getAvailableQuantity() <= 0) {
             throw new BookNotAvailableException("Book is not available for borrowing");
         }
@@ -75,5 +78,9 @@ public class BorrowingService {
 
     public List<BorrowingRecord> getOverdueRecords() {
         return borrowingRecordRepository.findOverdueRecords(LocalDate.now());
+    }
+
+    public List<BorrowingRecord> getAllBorrowingRecords() {
+        return borrowingRecordRepository.findAll();
     }
 }
