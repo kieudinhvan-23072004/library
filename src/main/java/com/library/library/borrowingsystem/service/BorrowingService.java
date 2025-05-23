@@ -1,102 +1,54 @@
 package com.library.library.borrowingsystem.service;
 
-import com.library.library.borrowingsystem.entity.*;
-import com.library.library.borrowingsystem.exception.*;
+import com.library.library.borrowingsystem.entity.Book;
+import com.library.library.borrowingsystem.entity.BorrowSlip;
+import com.library.library.borrowingsystem.exception.LibraryException;
 import com.library.library.borrowingsystem.repository.BookRepository;
-import com.library.library.borrowingsystem.repository.BorrowingRecordRepository;
-import com.library.library.borrowingsystem.repository.PatronRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
+import com.library.library.borrowingsystem.repository.BorrowSlipRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 public class BorrowingService {
-    private final BookRepository bookRepository;
-    private final PatronRepository patronRepository;
-    private final BorrowingRecordRepository borrowingRecordRepository;
 
-    @Value("${app.max-borrow-days:14}")
-    private int maxBorrowDays;
+    @Autowired
+    private BookRepository bookRepository;
 
-    @Value("${app.max-books-per-user:5}")
-    private int maxBooksPerUser;
+    @Autowired
+    private BorrowSlipRepository borrowSlipRepository;
 
     @Transactional
-    public BorrowingRecord borrowBook(Long bookId, Long patronId) {
-        Book book = bookRepository.findById(bookId)
-                .orElseThrow(() -> new ResourceNotFoundException("Book", "id", bookId));
-        Patron patron = patronRepository.findById(patronId)
-                .orElseThrow(() -> new ResourceNotFoundException("Patron", "id", patronId));
-
-        if (book.getAvailableQuantity() <= 0) {
-            throw new BookNotAvailableException("Book is not available for borrowing");
-        }
-
-        long activeBorrowings = borrowingRecordRepository.countByPatronIdAndStatus(patronId,
-                BorrowingRecord.BorrowingStatus.BORROWED);
-
-        if (activeBorrowings >= maxBooksPerUser) {
-            throw new BorrowingLimitExceededException("Patron has reached maximum borrowing limit");
-        }
-
-        BorrowingRecord record = new BorrowingRecord();
-        record.setBook(book);
-        record.setPatron(patron);
-        record.setBorrowDate(LocalDate.now());
-        record.setDueDate(LocalDate.now().plusDays(maxBorrowDays));
-        record.setStatus(BorrowingRecord.BorrowingStatus.BORROWED);
-
-        book.setAvailableQuantity(book.getAvailableQuantity() - 1);
-        bookRepository.save(book);
-
-        return borrowingRecordRepository.save(record);
+    public BorrowSlip createBorrowSlipWithBooks(BorrowSlip borrowSlip, List<String> bookTitles) {
+        // Set borrow slip ID and timestamps
+        borrowSlip.setId(UUID.randomUUID().toString());
+        borrowSlip.setCreatedAt(LocalDateTime.now());
+        borrowSlip.setUpdatedAt(LocalDateTime.now());
+        
+        // Join book titles with comma
+        borrowSlip.setBooks(String.join(", ", bookTitles));
+        
+        // Save borrow slip
+        return borrowSlipRepository.save(borrowSlip);
     }
 
     @Transactional
-    public BorrowingRecord returnBook(Long recordId) {
-        BorrowingRecord record = borrowingRecordRepository.findById(recordId)
-                .orElseThrow(() -> new ResourceNotFoundException("Borrowing record not found with id: " + recordId));
-
-        if (record.getStatus() != BorrowingRecord.BorrowingStatus.BORROWED) {
-            throw new InvalidOperationException("Book is not currently borrowed");
+    public void updateBookQuantities(List<String> bookIds) {
+        for (String bookId : bookIds) {
+            Book book = bookRepository.findById(bookId)
+                    .orElseThrow(() -> new LibraryException("Book not found with id: " + bookId));
+            
+            if (book.getAvailableQuantity() <= 0) {
+                throw new LibraryException("Book is not available: " + book.getTitle());
+            }
+            
+            book.setAvailableQuantity(book.getAvailableQuantity() - 1);
+            book.setUpdatedAt(LocalDateTime.now());
+            bookRepository.save(book);
         }
-
-        Book book = record.getBook();
-        book.setAvailableQuantity(book.getAvailableQuantity() + 1);
-        bookRepository.save(book);
-
-        record.setReturnDate(LocalDate.now());
-        record.setStatus(BorrowingRecord.BorrowingStatus.RETURNED);
-
-        return borrowingRecordRepository.save(record);
-    }
-
-    public List<BorrowingRecord> getOverdueRecords() {
-        return borrowingRecordRepository.findOverdueRecords(LocalDate.now());
-    }
-
-    public List<BorrowingRecord> getAllBorrowingRecords() {
-        return borrowingRecordRepository.findAll();
-    }
-
-    // Phương thức mới thêm vào để lấy danh sách mượn sách theo người dùng
-    public List<BorrowingRecord> getBorrowingsByPatron(Long patronId) {
-        if (!patronRepository.existsById(patronId)) {
-            throw new ResourceNotFoundException("Patron", "id", patronId);
-        }
-        return borrowingRecordRepository.findByPatronId(patronId);
-    }
-
-    // Phương thức mới thêm vào để lấy danh sách mượn sách theo sách
-    public List<BorrowingRecord> getBorrowingsByBook(Long bookId) {
-        if (!bookRepository.existsById(bookId)) {
-            throw new ResourceNotFoundException("Book", "id", bookId);
-        }
-        return borrowingRecordRepository.findByBookId(bookId);
     }
 }

@@ -1,68 +1,88 @@
 package com.library.library.borrowingsystem.service;
 
 import com.library.library.borrowingsystem.dto.BookDTO;
-import com.library.library.borrowingsystem.dto.BorrowingRecordDTO;
-import com.library.library.borrowingsystem.dto.PatronDTO;
+import com.library.library.borrowingsystem.dto.BorrowSlipDTO;
 import com.library.library.borrowingsystem.entity.Book;
-import com.library.library.borrowingsystem.entity.BorrowingRecord;
-import com.library.library.borrowingsystem.entity.Patron;
-import lombok.RequiredArgsConstructor;
-import org.modelmapper.ModelMapper;
+import com.library.library.borrowingsystem.entity.BorrowSlip;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class MapperService {
-    private final ModelMapper modelMapper;
 
     public BookDTO toBookDTO(Book book) {
-        return modelMapper.map(book, BookDTO.class);
+        if (book == null) return null;
+        
+        BookDTO dto = new BookDTO();
+        dto.setId(book.getId());
+        dto.setTitle(book.getTitle());
+        dto.setAuthor(book.getAuthor());
+        dto.setIsbn(book.getIsbn());
+        dto.setAvailableQuantity(book.getAvailableQuantity());
+        dto.setTotalQuantity(book.getTotalQuantity());
+        return dto;
+    }
+
+    public Book toBook(BookDTO dto) {
+        if (dto == null) return null;
+        
+        Book book = new Book();
+        // Don't set ID when converting from DTO to entity
+        book.setTitle(dto.getTitle());
+        book.setAuthor(dto.getAuthor());
+        book.setIsbn(dto.getIsbn());
+        book.setAvailableQuantity(dto.getAvailableQuantity());
+        book.setTotalQuantity(dto.getTotalQuantity());
+        return book;
     }
 
     public List<BookDTO> toBookDTOs(List<Book> books) {
+        if (books == null) return null;
         return books.stream()
                 .map(this::toBookDTO)
                 .collect(Collectors.toList());
     }
 
-    public Book toBook(BookDTO bookDTO) {
-        return modelMapper.map(bookDTO, Book.class);
-    }
-
-    public PatronDTO toPatronDTO(Patron patron) {
-        return modelMapper.map(patron, PatronDTO.class);
-    }
-
-    public List<PatronDTO> toPatronDTOs(List<Patron> patrons) {
-        return patrons.stream()
-                .map(this::toPatronDTO)
-                .collect(Collectors.toList());
-    }
-
-    public Patron toPatron(PatronDTO patronDTO) {
-        return modelMapper.map(patronDTO, Patron.class);
-    }
-
-    public BorrowingRecordDTO toBorrowingRecordDTO(BorrowingRecord record) {
-        BorrowingRecordDTO dto = new BorrowingRecordDTO();
-        dto.setId(record.getId());
-        dto.setBookId(record.getBook().getId());
-        dto.setBookTitle(record.getBook().getTitle());
-        dto.setPatronId(record.getPatron().getId());
-        dto.setPatronName(record.getPatron().getName());
-        dto.setBorrowDate(record.getBorrowDate());
-        dto.setReturnDate(record.getReturnDate());
-        dto.setDueDate(record.getDueDate());
-        dto.setStatus(record.getStatus());
+    public BorrowSlipDTO toBorrowSlipDTO(BorrowSlip slip) {
+        if (slip == null) return null;
+        
+        BorrowSlipDTO dto = new BorrowSlipDTO();
+        dto.setId(slip.getId());
+        dto.setBorrowerName(slip.getBorrowerName());
+        dto.setStudentId(slip.getStudentId());
+        dto.setContactEmail(slip.getContactEmail());
+        dto.setContactPhone(slip.getContactPhone());
+        dto.setBooks(slip.getBooks());
+        dto.setBorrowDate(slip.getBorrowDate());
+        dto.setDueDate(slip.getDueDate());
+        dto.setStatus(slip.getStatus());
+        dto.setCreatedAt(slip.getCreatedAt());
+        dto.setUpdatedAt(slip.getUpdatedAt());
         return dto;
     }
 
-    public List<BorrowingRecordDTO> toBorrowingRecordDTOs(List<BorrowingRecord> records) {
-        return records.stream()
-                .map(this::toBorrowingRecordDTO)
+    public BorrowSlip toBorrowSlip(BorrowSlipDTO dto) {
+        if (dto == null) return null;
+        
+        BorrowSlip slip = new BorrowSlip();
+        // Don't set ID when converting from DTO to entity
+        slip.setBorrowerName(dto.getBorrowerName());
+        slip.setStudentId(dto.getStudentId());
+        slip.setContactEmail(dto.getContactEmail());
+        slip.setContactPhone(dto.getContactPhone());
+        slip.setBooks(dto.getBooks());
+        slip.setBorrowDate(dto.getBorrowDate());
+        slip.setDueDate(dto.getDueDate());
+        slip.setStatus(dto.getStatus());
+        return slip;
+    }
+
+    public List<BorrowSlipDTO> toBorrowSlipDTOs(List<BorrowSlip> slips) {
+        if (slips == null) return null;
+        return slips.stream()
+                .map(this::toBorrowSlipDTO)
                 .collect(Collectors.toList());
     }
 }

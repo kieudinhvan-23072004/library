@@ -13,15 +13,20 @@ public class CorsConfig {
     public CorsFilter corsFilter() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
-
-        // Cho phép tất cả các origins (bạn có thể giới hạn lại nếu cần)
-        config.addAllowedOrigin("*");
-        // Cho phép các headers và methods thường dùng
+        
+        // Allow frontend origin
+        config.addAllowedOrigin("http://localhost:3000");
+        
+        // Allow all headers
         config.addAllowedHeader("*");
+        
+        // Allow all methods (GET, POST, PUT, DELETE, etc.)
         config.addAllowedMethod("*");
+        
+        // Allow credentials (cookies, authorization headers, etc.)
         config.setAllowCredentials(true);
-
-        source.registerCorsConfiguration("/api/**", config);
+        
+        source.registerCorsConfiguration("/**", config);
         return new CorsFilter(source);
     }
 }
